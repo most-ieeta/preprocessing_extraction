@@ -1,2 +1,4 @@
-# most_preprocessing_tools
-Preprocessing tools for the MoST project
+# preprocessing_extractions
+Preprocessing tools for extracting visual information for the MoST project.
+
+Depends on preprocessing geometry package. Depends on OpenCV package.
