@@ -45,9 +45,14 @@ void drawWindow() {
 	Polygon vv_p1 = globals.p1, vv_p2 = globals.p2;
 	Simplifier::visvalingam_until_n(vv_p1, globals.red_per);
 	Simplifier::visvalingam_until_n(vv_p2, globals.red_per);
-
 	drawPolygon(src, vv_p1, Scalar(0, 0, 0), 0, globals.max_y);
 	drawPolygon(src, vv_p2, Scalar(0, 0, 0), globals.max_x * 2, globals.max_y);
+
+	Polygon dp_p1 = globals.p1, dp_p2 = globals.p2;
+	Simplifier::douglas_peucker_until_n(dp_p1, globals.red_per);
+	Simplifier::douglas_peucker_until_n(dp_p2, globals.red_per);
+	drawPolygon(src, vv_p1, Scalar(0, 0, 0), globals.max_x, globals.max_y);
+	drawPolygon(src, vv_p2, Scalar(0, 0, 0), globals.max_x * 3, globals.max_y);
 
 	std::vector<Polygon> vvt_pols;
 	vvt_pols.push_back(globals.p1);
