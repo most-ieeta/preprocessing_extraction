@@ -9,199 +9,107 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-const double RATIO = 10.0;
+#include "polygon.hpp"
+#include "simplifier.hpp"
+
+#define FACTOR 1.2 //Spacing factor
+
 using namespace cv;
-int gui_area;
 
-const char *W_NAME = "Simplification";
-std::vector<Point> points;
-std::vector<std::vector<Point>> polys;
+struct {
+	Polygon p1;
+	Polygon p2;
+	double t_value = 1;
+	double red_per = 0;
+	double max_x = 0;
+	double max_y = 0;
+} globals;
 
-Mat src;
-
-/** @brief Simplifies a polygon using Visvalingam Algorithm.
-
-The function simplify simplifies a given polygin (vector of points) using
-Visvalingam algorithm in Line generalisation by repeated elimination of the
-smallest area.
-
-@param origin Original polygon.
-@param min_area Minimun area in square pixels. Triangles with less than this
-area are removed.
-@return Polygon (vector of points) simplified.
- */
-std::vector<Point> simplify(const std::vector<Point> &origin, float min_area) {
-  // We will only be dealing with area squared to simplify computational
-  // resources
-  min_area = min_area * min_area;
-
-  // Every triangle will be defined by their first point id. The vertexes are
-  // P(i), P(i+1), P(i+2).
-  std::vector<Point> reduced = origin;
-
-  // Create 2 new points at the end to close triangles
-  reduced.push_back(reduced[0]);
-  reduced.push_back(reduced[1]);
-
-  for (unsigned int i = 0;
-       i < (reduced.size() -
-            2);) { // Increment will be at end of loop due to logic needed
-
-    float dx01, dx02, dx12, dy01, dy02,
-        dy12;               // DcAB = distance between A and B in coord c
-    float d01, d02, d12, p; // p = semiperimeter
-
-    dx01 = reduced[i + 0].x - reduced[i + 1].x;
-    dy01 = reduced[i + 0].y - reduced[i + 1].y;
-    d01 = std::sqrt(dx01 * dx01 + dy01 * dy01);
-
-    dx02 = reduced[i + 0].x - reduced[i + 2].x;
-    dy02 = reduced[i + 0].y - reduced[i + 2].y;
-    d02 = std::sqrt(dx02 * dx02 + dy02 * dy02);
-
-    dx12 = reduced[i + 1].x - reduced[i + 2].x;
-    dy12 = reduced[i + 1].y - reduced[i + 2].y;
-    d12 = std::sqrt(dx12 * dx12 + dy12 * dy12);
-
-    p = (d01 + d02 + d12) / 2;
-
-    float area_sq = p * (p - d01) * (p - d02) * (p - d12);
-
-    /*std::cout << "Triangle (" << reduced[i + 0].x << ", " << reduced[i + 0].y
-              << ") (" << reduced[i + 1].x << ", " << reduced[i + 1].y << ") ("
-              << reduced[i + 2].x << ", " << reduced[i + 2].y
-              << ") "
-                 "with area "
-              << area_sq << std::endl;
-
-    if (area_sq == 0) {
-      std::cout << "ERROR area 0. d01 d02 d12 = " << d01 << ", " << d02 << ", "
-    << d12 << std::endl; std::cout << "ERROR p = " << p << std::endl;
-    }*/
-
-    // if the area is smaller than the min acceptable, remove and
-    if (area_sq < min_area) {
-      reduced.erase(reduced.begin() +
-                    (i + 1) % (reduced.size() - 2)); // Erase the point
-
-      i = std::max(0, static_cast<int>(i) -
-                          2); // We might need to recalc 2 points back
-
-      reduced.pop_back();
-      reduced.pop_back();
-      reduced.push_back(reduced[0]);
-      reduced.push_back(reduced[1]);
-      // Either way, current point is a new point, so we won't iterate.
-    } else { // Otherwise, just loop as usual
-      ++i;
-    }
-  }
-
-  reduced.pop_back();
-  reduced.pop_back();
-
-  return reduced;
-}
-
-std::vector<Point> simplify_n(const std::vector<Point>& origin, size_t to_remove) {
-  std::vector<Point> reduced = origin;
-	for (size_t i = 0; i < to_remove; ++i) {
-		float min_area = std::numeric_limits<float>::max();
-		size_t to_remove = 0;
-
-		reduced.push_back(reduced[0]);
-		reduced.push_back(reduced[1]);
-
-		for (unsigned int i = 0;i < (reduced.size() -	2); ++i) {
-
-			float dx01, dx02, dx12, dy01, dy02,
-						dy12;               // DcAB = distance between A and B in coord c
-			float d01, d02, d12, p; // p = semiperimeter
-
-			dx01 = reduced[i + 0].x - reduced[i + 1].x;
-			dy01 = reduced[i + 0].y - reduced[i + 1].y;
-			d01 = std::sqrt(dx01 * dx01 + dy01 * dy01);
-
-			dx02 = reduced[i + 0].x - reduced[i + 2].x;
-			dy02 = reduced[i + 0].y - reduced[i + 2].y;
-			d02 = std::sqrt(dx02 * dx02 + dy02 * dy02);
-
-			dx12 = reduced[i + 1].x - reduced[i + 2].x;
-			dy12 = reduced[i + 1].y - reduced[i + 2].y;
-			d12 = std::sqrt(dx12 * dx12 + dy12 * dy12);
-
-			p = (d01 + d02 + d12) / 2;
-
-			float area_sq = p * (p - d01) * (p - d02) * (p - d12);
-
-			// if the area is smaller than the current min area acceptable, mark as to remove
-			if (area_sq < min_area) {
-				to_remove = i;
-				min_area = area_sq;
-			}
-
-      reduced.erase(reduced.begin() +
-                    (to_remove + 1) % (reduced.size() - 2)); // Erase the point
-			reduced.pop_back();
-			reduced.pop_back();
-		}
+void drawPolygon(Mat src, const Polygon& pol, const Scalar& color, double displace_x = 0, double displace_y = 0) {
+	std::vector<std::vector<Point>> polys;
+	polys.emplace_back();
+	for (SimplePoint p: pol.points) {
+		polys[0].emplace_back(p.x + displace_x * FACTOR, p.y + displace_y * FACTOR);
 	}
-	return reduced;
+	drawContours(src, polys, 0, color);
 }
 
-void recalcTolerance(int, void *) {
-	Mat poly;
-	src.copyTo(poly);
-	polys.clear();
-	polys.push_back(points);
-	drawContours(poly, polys, 0, Scalar(0, 255, 0));
+void drawWindow() {
+	Mat src = Mat::ones(globals.max_x * 3 * FACTOR, globals.max_y * 3 * FACTOR, CV_8U)*255;
+	cvtColor(src, src, COLOR_GRAY2BGR);
+	namedWindow("Polygons", WINDOW_NORMAL);
 
-	std::vector<Point> simplified;
-	simplified = simplify(points, gui_area / RATIO);
-	polys.push_back(simplified);
+	drawPolygon(src, globals.p1, Scalar(0, 0, 0));
+	drawPolygon(src, globals.p2, Scalar(0, 0, 0), globals.max_x * 2, 0);
 
-	std::cout << "Simplified " << points.size() << " points with "
-		<< gui_area / RATIO << " tolerance. Result: " << simplified.size()
-		<< "points." << std::endl;
+	Polygon vv_p1 = globals.p1, vv_p2 = globals.p2;
+	Simplifier::visvalingam_until_n(vv_p1, globals.red_per);
+	Simplifier::visvalingam_until_n(vv_p2, globals.red_per);
 
-	drawContours(poly, polys, 1, Scalar(0, 0, 255));
-	imshow(W_NAME, poly);
+	drawPolygon(src, vv_p1, Scalar(0, 0, 0), 0, globals.max_y);
+	drawPolygon(src, vv_p2, Scalar(0, 0, 0), globals.max_x * 2, globals.max_y);
+
+	std::vector<Polygon> vvt_pols;
+	vvt_pols.push_back(globals.p1);
+	vvt_pols.push_back(globals.p2);
+	Simplifier::visvalingam_with_time(vvt_pols, globals.red_per, globals.t_value);
+	drawPolygon(src, vvt_pols[0], Scalar(0, 0, 0), globals.max_x, 0);
+	drawPolygon(src, vvt_pols[1], Scalar(0, 0, 0), globals.max_x * 3, 0);
+
+	imshow("Polygons", src);
+}
+
+void change_red_per(int new_value, void*) {
+	globals.red_per = new_value/100.0;
+	drawWindow();
+}
+
+void change_t_value(int new_value, void*) {
+	globals.t_value = new_value/10.0;
+	drawWindow();
 }
 
 int main(int argc, char *argv[]) {
-	if (argc != 3 && argc != 4 && argc != 5) {
+	if (argc != 3) {
 		std::cout << "Wrong usage! Correct usages:\n"
-			"  ./simplifier <source points file (.pof)> <source image>\n"
-			"  ./simplifier <source points file (.pof)> <step> "
-			"<iterations> for chart generation\n"
-			"  ./simplifier <source points file (.pof)> <output file "
-			"(.pof)> t <tolerance> for auto simplification\n";
+			"  ./simplifier <points file - pof or wkt> <points file - pof or wkt> \n";
 		exit(1);
 	}
 
 	std::fstream fs(argv[1], std::fstream::in);
+	std::fstream fs2(argv[2], std::fstream::in);
 
 	if (!fs.is_open()) {
-		std::cout << "Error, could not load file " << argv[1] << std::endl;
+		std::cout << "Error, could not load one of the files\n";
 		exit(2);
 	}
+	
+	Polygon p1(fs);
+	Polygon p2(fs2);
+	globals.p1 = p1;
+	globals.p2 = p2;
 
-	int x, y;
-	while (fs >> x >> y) {
-		points.emplace_back(x, y);
+	for (SimplePoint p: p1.points) {
+		if (p.x > globals.max_x) globals.max_x = p.x;
+		if (p.y > globals.max_y) globals.max_y = p.y;
+	}
+	for (SimplePoint p: p2.points) {
+		if (p.x > globals.max_x) globals.max_x = p.x;
+		if (p.y > globals.max_y) globals.max_y = p.y;
 	}
 
-	std::string fname(argv[1]);
-	fname.pop_back();
-	fname.pop_back();
-	fname.pop_back();
-	fname.pop_back();
 
-	if (argc == 3) {
-		src = imread(argv[2]);
+	drawWindow();
+	
+	createTrackbar("\% points to remove:", "Polygons", nullptr, 100, change_red_per);
+	createTrackbar("time weigth:", "Polygons", nullptr, 100, change_t_value);
 
-		namedWindow(W_NAME, WINDOW_NORMAL);
-		createTrackbar("Tolerance (px squared*10)", W_NAME, &gui_area, 2000,
+	
+	char c;
+	while ((c = waitKey()) != 'q') {
+		continue;
+	}
+	/*	createTrackbar("Tolerance (px squared*10)", W_NAME, &gui_area, 2000,
 				recalcTolerance);
 		recalcTolerance(0, nullptr);
 
@@ -241,5 +149,5 @@ int main(int argc, char *argv[]) {
 		for (Point p : simp) {
 			fs2 << p.x << " " << p.y << "\n";
 		}
-	}
+	}*/
 }
