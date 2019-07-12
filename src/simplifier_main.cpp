@@ -35,7 +35,7 @@ void drawPolygon(Mat src, const Polygon& pol, const Scalar& color, double displa
 }
 
 void drawWindow() {
-	Mat src = Mat::ones(globals.max_x * 3 * FACTOR, globals.max_y * 3 * FACTOR, CV_8U)*255;
+	Mat src = Mat::ones(globals.max_y * 2 * FACTOR, globals.max_x * 4 * FACTOR, CV_8U)*255;
 	cvtColor(src, src, COLOR_GRAY2BGR);
 	namedWindow("Polygons", WINDOW_NORMAL);
 
@@ -60,6 +60,11 @@ void drawWindow() {
 	Simplifier::visvalingam_with_time(vvt_pols, globals.red_per, globals.t_value);
 	drawPolygon(src, vvt_pols[0], Scalar(0, 0, 0), globals.max_x, 0);
 	drawPolygon(src, vvt_pols[1], Scalar(0, 0, 0), globals.max_x * 3, 0);
+
+	std::cout << "Original points: " << globals.p1.points.size() << " / " << globals.p2.points.size() << "\n"
+	          << "VV points:       " << vv_p1.points.size() << " / " << vv_p2.points.size() << "\n"
+						<< "DP points:       " << dp_p1.points.size() << " / " << dp_p1.points.size() << "\n"
+						<< "VVT points:      " << vvt_pols[0].points.size() << " / " << vvt_pols[1].points.size() << std::endl;
 
 	imshow("Polygons", src);
 }
