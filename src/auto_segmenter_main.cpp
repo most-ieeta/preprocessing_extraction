@@ -232,7 +232,7 @@ int main(int argc, char** argv)
 
 				image = 255 - image;
 
-				findContours(image, vertexes, RETR_EXTERNAL, CHAIN_APPROX_TC89_KCOS);
+				findContours(image, vertexes, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 				std::fstream fs(string(argv[2]) + ".pof",
 						std::fstream::in | std::fstream::out | std::fstream::trunc);
 				if (!fs.is_open()) {
@@ -255,7 +255,7 @@ int main(int argc, char** argv)
 				cvtColor(image, image, COLOR_BGR2GRAY);
 				image.convertTo(image, CV_8UC1);
 
-				findContours(image, vertexes, RETR_EXTERNAL, CHAIN_APPROX_TC89_KCOS);
+				findContours(image, vertexes, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 				std::fstream fs(string(argv[2]) + ".pof",
 						std::fstream::in | std::fstream::out | std::fstream::trunc);
 				if (!fs.is_open()) {

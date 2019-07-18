@@ -32,6 +32,9 @@ void drawPolygon(Mat src, const Polygon& pol, const Scalar& color, double displa
 		polys[0].emplace_back(p.x + displace_x * FACTOR, p.y + displace_y * FACTOR);
 	}
 	drawContours(src, polys, 0, color);
+	for (Point p: polys[0]) {
+		drawMarker(src, p, color);
+	}
 }
 
 void drawWindow() {

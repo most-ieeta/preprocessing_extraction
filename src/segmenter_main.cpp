@@ -79,7 +79,7 @@ void generateContour() {
           std::cout << p.x << "," << p.y << "  ";
   }*/
 
-  findContours(binary, vertexes, RETR_EXTERNAL, CHAIN_APPROX_TC89_KCOS);
+  findContours(binary, vertexes, RETR_EXTERNAL, CHAIN_APPROX_NONE);
   std::cout << "\n\nKC0S (" << vertexes[0].size() << "): \n";
 
   std::fstream fs(filename + ".pof",
