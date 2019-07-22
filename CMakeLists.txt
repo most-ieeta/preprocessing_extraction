@@ -28,6 +28,6 @@ target_link_libraries(frame_extractor ${OpenCV_LIBS})
 add_executable(hsv src/hsv_filter_main.cpp)
 target_link_libraries(hsv ${OpenCV_LIBS})
 
-add_executable(auto_segmenter src/auto_segmenter_main.cpp)
-target_link_libraries(auto_segmenter ${OpenCV_LIBS})	
+add_executable(auto_segmenter src/auto_segmenter_main.cpp preprocessing_geometry/src/polygon.cpp)
+target_link_libraries(auto_segmenter ${OpenCV_LIBS} ${GEOS_C})	
 
