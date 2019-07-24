@@ -25,49 +25,66 @@ struct {
 	double max_y = 0;
 } globals;
 
-void drawPolygon(Mat src, const Polygon& pol, const Scalar& color, double displace_x = 0, double displace_y = 0) {
+void drawPolygon(Mat src, const Polygon& pol, const Scalar& color, double displace_x, double displace_y, bool drawMarkers) {
 	std::vector<std::vector<Point>> polys;
 	polys.emplace_back();
 	for (SimplePoint p: pol.points) {
-		polys[0].emplace_back(p.x + displace_x * FACTOR, p.y + displace_y * FACTOR);
+		polys[0].emplace_back(p.x + displace_x * globals.max_x * FACTOR, p.y + displace_y * globals.max_y * FACTOR);
 	}
 	drawContours(src, polys, 0, color);
-	for (Point p: polys[0]) {
-		drawMarker(src, p, color);
+
+	if (drawMarkers) {
+		for (Point p: polys[0]) {
+			drawMarker(src, p, color);
+		}
 	}
 }
 
 void drawWindow() {
-	Mat src = Mat::ones(globals.max_y * 2 * FACTOR, globals.max_x * 4 * FACTOR, CV_8U)*255;
+	Mat src = Mat::ones(globals.max_y * 4 * FACTOR, globals.max_x * 4 * FACTOR, CV_8U)*255;
 	cvtColor(src, src, COLOR_GRAY2BGR);
 	namedWindow("Polygons", WINDOW_NORMAL);
 
-	drawPolygon(src, globals.p1, Scalar(0, 0, 0));
-	drawPolygon(src, globals.p2, Scalar(0, 0, 0), globals.max_x * 2, 0);
+	//Originals
+	drawPolygon(src, globals.p1, Scalar(0, 0, 0), 0, 0, false);
+	drawPolygon(src, globals.p1, Scalar(0, 0, 0), 0, 2, true);
 
+	drawPolygon(src, globals.p2, Scalar(0, 0, 0), 2, 0, false);
+	drawPolygon(src, globals.p2, Scalar(0, 0, 0), 2, 2, true);
+
+	//Visvalingam
 	Polygon vv_p1 = globals.p1, vv_p2 = globals.p2;
 	Simplifier::visvalingam_until_n(vv_p1, globals.red_per);
 	Simplifier::visvalingam_until_n(vv_p2, globals.red_per);
-	drawPolygon(src, vv_p1, Scalar(0, 0, 0), 0, globals.max_y);
-	drawPolygon(src, vv_p2, Scalar(0, 0, 0), globals.max_x * 2, globals.max_y);
 
+	drawPolygon(src, vv_p1, Scalar(0, 0, 0), 0, 1, false);
+	drawPolygon(src, vv_p1, Scalar(0, 0, 0), 0, 3, true);
+
+	drawPolygon(src, vv_p2, Scalar(0, 0, 0), 2, 1, false);
+	drawPolygon(src, vv_p2, Scalar(0, 0, 0), 2, 3, true);
+
+	//Douglas-Peucker
 	Polygon dp_p1 = globals.p1, dp_p2 = globals.p2;
 	Simplifier::douglas_peucker_until_n(dp_p1, globals.red_per);
 	Simplifier::douglas_peucker_until_n(dp_p2, globals.red_per);
-	drawPolygon(src, vv_p1, Scalar(0, 0, 0), globals.max_x, globals.max_y);
-	drawPolygon(src, vv_p2, Scalar(0, 0, 0), globals.max_x * 3, globals.max_y);
 
+	drawPolygon(src, dp_p1, Scalar(0, 0, 0), 1, 1, false);
+	drawPolygon(src, dp_p1, Scalar(0, 0, 0), 1, 3, true);
+
+	drawPolygon(src, dp_p2, Scalar(0, 0, 0), 3, 1, false);
+	drawPolygon(src, dp_p2, Scalar(0, 0, 0), 3, 3, true);
+
+	//Temporal Visvalingam
 	std::vector<Polygon> vvt_pols;
 	vvt_pols.push_back(globals.p1);
 	vvt_pols.push_back(globals.p2);
 	Simplifier::visvalingam_with_time(vvt_pols, globals.red_per, globals.t_value);
-	drawPolygon(src, vvt_pols[0], Scalar(0, 0, 0), globals.max_x, 0);
-	drawPolygon(src, vvt_pols[1], Scalar(0, 0, 0), globals.max_x * 3, 0);
 
-	std::cout << "Original points: " << globals.p1.points.size() << " / " << globals.p2.points.size() << "\n"
-	          << "VV points:       " << vv_p1.points.size() << " / " << vv_p2.points.size() << "\n"
-						<< "DP points:       " << dp_p1.points.size() << " / " << dp_p1.points.size() << "\n"
-						<< "VVT points:      " << vvt_pols[0].points.size() << " / " << vvt_pols[1].points.size() << std::endl;
+	drawPolygon(src, vvt_pols[0], Scalar(0, 0, 0), 1, 0, false);
+	drawPolygon(src, vvt_pols[0], Scalar(0, 0, 0), 1, 2, true);
+	
+	drawPolygon(src, vvt_pols[1], Scalar(0, 0, 0), 3, 0, false);
+	drawPolygon(src, vvt_pols[1], Scalar(0, 0, 0), 3, 2, true);
 
 	imshow("Polygons", src);
 }
@@ -97,8 +114,18 @@ int main(int argc, char *argv[]) {
 		exit(2);
 	}
 	
-	Polygon p1(fs);
-	Polygon p2(fs2);
+	Polygon p1;
+	if (fs.peek() == 'P') 
+		p1 = Polygon(fs, Polygon::FileType::FILE_WKT);
+	else
+		p1 = Polygon(fs);
+
+	Polygon p2;
+	if (fs2.peek() == 'P')
+		p2 = Polygon(fs2, Polygon::FileType::FILE_WKT);
+	else
+		p2 = Polygon(fs2);
+
 	globals.p1 = p1;
 	globals.p2 = p2;
 

@@ -203,7 +203,7 @@ int main(int argc, char** argv) {
 		mask.convertTo(binary, CV_32FC1);
 		threshold(binary, binary, 200, 255, THRESH_BINARY);
 		binary.convertTo(binary, CV_8UC1);
-		findContours(binary, vertexes, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+		findContours(binary, vertexes, RETR_EXTERNAL, CHAIN_APPROX_NONE);
 		size_t biggest = 0;
 		size_t biggest_size = 0;
 		for (size_t i = 0; i < vertexes.size(); ++i) {
