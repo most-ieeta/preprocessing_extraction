@@ -12,6 +12,8 @@
 #include "polygon.hpp"
 #include "simplifier.hpp"
 
+#include "cxxopts.hpp"
+
 #define FACTOR 1.2 //Spacing factor
 
 using namespace cv;
@@ -40,7 +42,7 @@ void drawPolygon(Mat src, const Polygon& pol, const Scalar& color, double displa
 	}
 }
 
-void drawWindow() {
+Mat genImage(bool drawWindow) {
 	Mat src = Mat::ones(globals.max_y * 4 * FACTOR, globals.max_x * 4 * FACTOR, CV_8U)*255;
 	cvtColor(src, src, COLOR_GRAY2BGR);
 	namedWindow("Polygons", WINDOW_NORMAL);
@@ -86,28 +88,50 @@ void drawWindow() {
 	drawPolygon(src, vvt_pols[1], Scalar(0, 0, 0), 3, 0, false);
 	drawPolygon(src, vvt_pols[1], Scalar(0, 0, 0), 3, 2, true);
 
-	imshow("Polygons", src);
+	if (drawWindow)
+		imshow("Polygons", src);
+	return src;
 }
 
 void change_red_per(int new_value, void*) {
 	globals.red_per = new_value/100.0;
-	drawWindow();
+	genImage(true);
 }
 
 void change_t_value(int new_value, void*) {
 	globals.t_value = new_value/10.0;
-	drawWindow();
+	genImage(true);
 }
 
 int main(int argc, char *argv[]) {
-	if (argc != 3) {
-		std::cout << "Wrong usage! Correct usages:\n"
-			"  ./simplifier <points file - pof or wkt> <points file - pof or wkt> \n";
-		exit(1);
+	cxxopts::Options options("Simplifier", "Simplifies two given polygons, with options to visualize or generate images. Call with -h or --help to see full help.");
+	options.add_options()
+		("h,help", "Shows full help")
+		("p", "Mandatory. First polygon to be simplified.", cxxopts::value<std::string>())
+		("q", "Mandatory. Second polygon to be simplified", cxxopts::value<std::string>())
+		("o,output", "File to save image from simplified polygons", cxxopts::value<std::string>())
+		("r", "Percentage of points to be removed, between 0 and 1", cxxopts::value<double>())
+		("t", "Time value for visvalingam-with-time method", cxxopts::value<double>());
+	
+	if (argc==1) {
+		std::cout << options.help() << std::endl;
+		return 0;
 	}
 
-	std::fstream fs(argv[1], std::fstream::in);
-	std::fstream fs2(argv[2], std::fstream::in);
+	auto result = options.parse(argc, argv);
+
+	if (result["help"].as<bool>()) {
+		std::cout << options.help() << std::endl;
+		return 0;
+	}
+
+	if (!result.count("p") && !result.count("q")) {
+		std::cout << "Error. Need to specify polygons.\n";
+		return 1;
+	}
+
+	std::fstream fs(result["p"].as<std::string>(), std::fstream::in);
+	std::fstream fs2(result["q"].as<std::string>(), std::fstream::in);
 
 	if (!fs.is_open()) {
 		std::cout << "Error, could not load one of the files\n";
@@ -137,57 +161,21 @@ int main(int argc, char *argv[]) {
 		if (p.x > globals.max_x) globals.max_x = p.x;
 		if (p.y > globals.max_y) globals.max_y = p.y;
 	}
-
-
-	drawWindow();
-	
-	createTrackbar("\% points to remove:", "Polygons", nullptr, 100, change_red_per);
-	createTrackbar("time weigth:", "Polygons", nullptr, 100, change_t_value);
-
-	
-	char c;
-	while ((c = waitKey()) != 'q') {
-		continue;
-	}
-	/*	createTrackbar("Tolerance (px squared*10)", W_NAME, &gui_area, 2000,
-				recalcTolerance);
-		recalcTolerance(0, nullptr);
+	if (!result.count("output")) { //Show window
+		genImage(true);
+		
+		createTrackbar("\% points to remove:", "Polygons", nullptr, 100, change_red_per);
+		createTrackbar("time weigth:", "Polygons", nullptr, 100, change_t_value);
 
 		char c;
 		while ((c = waitKey()) != 'q') {
-			if (c == 's') {
-				std::vector<Point> simp;
-				simp = simplify(points, gui_area / RATIO);
-				std::fstream fs2(fname + "_simplified.pof",
-						std::fstream::out | std::fstream::trunc);
-
-				for (Point p : simp) {
-					fs2 << p.x << " " << p.y << "\n";
-				}
-			}
+			continue;
 		}
-	} else if (argc == 4) {
-		std::fstream fs2(fname + "_simplification_chart.csv",
-				std::fstream::out | std::fstream::trunc);
-
-		unsigned int step = std::stoi(argv[2]);
-		unsigned int iterations = std::stoi(argv[3]);
-
-		fs2 << "0 " << points.size() << "\n";
-		for (float f = step; f < (step * iterations); f += step) {
-			std::vector<Point> simp;
-			simp = simplify(points, f);
-			fs2 << f << " " << simp.size() << "\n";
-		}
-	} else if (argc == 5) {
-		float n = std::stof(argv[4]);
-		std::vector<Point> simp;
-		simp = simplify_n(points, static_cast<int>(n*points.size()));
-		std::fstream fs2(argv[2],
-				std::fstream::out | std::fstream::trunc);
-
-		for (Point p : simp) {
-			fs2 << p.x << " " << p.y << "\n";
-		}
-	}*/
+	} else {
+		globals.red_per = result["r"].as<double>();
+		globals.t_value = result["t"].as<double>();
+		
+		Mat img = genImage(false);
+		imwrite(result["o"].as<std::string>(), img);
+	}
 }
