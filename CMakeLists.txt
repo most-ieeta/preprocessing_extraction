@@ -31,3 +31,6 @@ target_link_libraries(hsv ${OpenCV_LIBS})
 add_executable(auto_segmenter src/auto_segmenter_main.cpp preprocessing_geometry/src/polygon.cpp)
 target_link_libraries(auto_segmenter ${OpenCV_LIBS} ${GEOS_C})	
 
+add_executable(cell_extraction src/cell_extraction_main.cpp)
+target_link_libraries(cell_extraction ${OpenCV_LIBS})
+

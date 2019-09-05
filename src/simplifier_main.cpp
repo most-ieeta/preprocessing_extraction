@@ -37,7 +37,7 @@ void drawPolygon(Mat src, const Polygon& pol, const Scalar& color, double displa
 
 	if (drawMarkers) {
 		for (Point p: polys[0]) {
-			drawMarker(src, p, color);
+			drawMarker(src, p, color, MARKER_CROSS, 20);
 		}
 	}
 }
@@ -54,10 +54,21 @@ Mat genImage(bool drawWindow) {
 	drawPolygon(src, globals.p2, Scalar(0, 0, 0), 2, 0, false);
 	drawPolygon(src, globals.p2, Scalar(0, 0, 0), 2, 2, true);
 
+	std::fstream fs("p1_orig.pof", std::fstream::out);
+	globals.p1.save(fs, Polygon::FileType::FILE_POF);
+	fs = std::fstream("p2_orig.pof", std::fstream::out);
+	globals.p2.save(fs, Polygon::FileType::FILE_POF);
+
 	//Visvalingam
 	Polygon vv_p1 = globals.p1, vv_p2 = globals.p2;
 	Simplifier::visvalingam_until_n(vv_p1, globals.red_per);
 	Simplifier::visvalingam_until_n(vv_p2, globals.red_per);
+
+	fs = std::fstream("p1_vv.pof", std::fstream::out);
+	vv_p1.save(fs, Polygon::FileType::FILE_POF);
+	fs.close();
+	fs = std::fstream("p2_vv.pof", std::fstream::out);
+	vv_p2.save(fs, Polygon::FileType::FILE_POF);
 
 	drawPolygon(src, vv_p1, Scalar(0, 0, 0), 0, 1, false);
 	drawPolygon(src, vv_p1, Scalar(0, 0, 0), 0, 3, true);
@@ -70,6 +81,11 @@ Mat genImage(bool drawWindow) {
 	Simplifier::douglas_peucker_until_n(dp_p1, globals.red_per);
 	Simplifier::douglas_peucker_until_n(dp_p2, globals.red_per);
 
+	fs = std::fstream("p1_dp.pof", std::fstream::out);
+	dp_p1.save(fs, Polygon::FileType::FILE_POF);
+	fs = std::fstream("p2_dp.pof", std::fstream::out);
+	dp_p2.save(fs, Polygon::FileType::FILE_POF);
+
 	drawPolygon(src, dp_p1, Scalar(0, 0, 0), 1, 1, false);
 	drawPolygon(src, dp_p1, Scalar(0, 0, 0), 1, 3, true);
 
@@ -81,6 +97,10 @@ Mat genImage(bool drawWindow) {
 	vvt_pols.push_back(globals.p1);
 	vvt_pols.push_back(globals.p2);
 	Simplifier::visvalingam_with_time(vvt_pols, globals.red_per, globals.t_value);
+	fs = std::fstream("p1_vvt.pof", std::fstream::out);
+	vvt_pols[0].save(fs, Polygon::FileType::FILE_POF);
+	fs = std::fstream("p2_vvt.pof", std::fstream::out);
+	vvt_pols[1].save(fs, Polygon::FileType::FILE_POF);
 
 	drawPolygon(src, vvt_pols[0], Scalar(0, 0, 0), 1, 0, false);
 	drawPolygon(src, vvt_pols[0], Scalar(0, 0, 0), 1, 2, true);
