@@ -34,3 +34,8 @@ target_link_libraries(auto_segmenter ${OpenCV_LIBS} ${GEOS_C})
 add_executable(cell_extraction src/cell_extraction_main.cpp)
 target_link_libraries(cell_extraction ${OpenCV_LIBS})
 
+add_executable(warp src/warp_main.cpp)
+target_link_libraries(warp ${OpenCV_LIBS})
+
+add_executable(draw_wkt src/draw_wkt.cpp preprocessing_geometry/src/polygon.cpp preprocessing_geometry/src/simplifier.cpp)
+target_link_libraries(draw_wkt ${OpenCV_LIBS} ${GEOS_C})
