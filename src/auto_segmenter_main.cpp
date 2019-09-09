@@ -119,8 +119,8 @@ int main(int argc, char** argv) {
 		("v,video", "Input and output files are of type video. Cannot be used together with --image. One of either is obligatory.")
 		("m,media", "Input media.", cxxopts::value<std::string>())
 		("o,output", "Output file. Output will be written as the same type of input file.", cxxopts::value<std::string>())
-		("p,poly", "Output file. Output one WKT polygon per line.", cxxopts::value<std::string>());
-	//Future: blurring. Histogram normalization CLAHE
+		("p,poly", "Output file. Output one WKT polygon per line.", cxxopts::value<std::string>())
+		("b,blur", "Blurres the image before applying segmentation. This option has no effect on outputs, just on contour definition.", cxxopts::value<std::string>());
 
 	if (argc==1) {
 		std::cout << options.help() << std::endl;
@@ -185,8 +185,17 @@ int main(int argc, char** argv) {
 			addWeighted(image, 0.5, maskshow, 0.5, 0, maskshow, CV_8UC3);
 			imshow("Pre-segmentation mask", maskshow);
 		}
-		
-		watershed(image, mask);
+
+		Mat proc;
+		if (result.count("b")) {
+			int size = std::stoi(result["b"].as<std::string>());
+			std::cout << "Blur size: " << size << std::endl;
+			blur(cur_frame, proc, Size(size, size));
+		} else {
+			proc = cur_frame;
+		}
+
+		watershed(proc, mask);
 		// Shows mask watershed
 		{
 			Mat maskshow;
@@ -264,7 +273,17 @@ int main(int argc, char** argv) {
 			Mat mask; // Mask to hold the values
 			mask = drawMask(cur_frame, result["filter"].as<std::string>());
 
-			watershed(cur_frame, mask);
+			Mat proc; //Frame to be processed; can be blurred
+
+			if (result.count("b")) {
+				int size = std::stoi(result["b"].as<std::string>());
+				std::cout << "Blur size: " << size << std::endl;
+				blur(cur_frame, proc, Size(size, size));
+			} else {
+				proc = cur_frame;
+			}
+
+			watershed(proc, mask);
 
 			//Finds the largest contour
 			std::vector<std::vector<Point>> vertexes;
