@@ -190,9 +190,9 @@ int main(int argc, char** argv) {
 		if (result.count("b")) {
 			int size = std::stoi(result["b"].as<std::string>());
 			std::cout << "Blur size: " << size << std::endl;
-			blur(cur_frame, proc, Size(size, size));
+			blur(image, proc, Size(size, size));
 		} else {
-			proc = cur_frame;
+			proc = image;
 		}
 
 		watershed(proc, mask);
