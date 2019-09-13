@@ -8,8 +8,11 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 
+#include "cxxopts.hpp"
+
 using namespace cv;
 
+//Map parameters are fixed. TODO read from config file
 double coordx(double x) {
 	double coord_x_min = 615202.199;
 	double coord_x_max = 616268.574;
@@ -20,6 +23,7 @@ double coordx(double x) {
 	return (x - map_x_min) / (map_x_max - map_x_min) * (coord_x_max - coord_x_min) + coord_x_min;
 }
 
+//Map parameters are fixed. TODO read from config file
 double coordy(double y) {
 	double coord_y_min = 4583991.175;
 	double coord_y_max = 4582453.191;
@@ -30,25 +34,57 @@ double coordy(double y) {
 	return (y - map_y_min) / (map_y_max - map_y_min) * (coord_y_max - coord_y_min) + coord_y_min;
 }
 
-//map y max = 8192
+int main(int argc, char* argv[]) {
+	cxxopts::Options options("warp", "Performs warp perspective on a wkt polygon. Prints results to stdout, redirect with >>.");
+	options.add_options()
+		("h,help", "Shows full help")
+		("s,source", "File with points on source (oblique) image. Each line should have 2 double-precision numbers separated by a space (x y\\n).", cxxopts::value<std::string>())
+		("t,target", "File with points on target (map) image. Each line should have 2 double-precision numbers, separated by a space (x y \\n).", cxxopts::value<std::string>())
+		("p,poly", "Polygon file, as .pof", cxxopts::value<std::string>());
 
-int main(int, char* argv[]) {
-	std::vector<Point2f> src, dst;
+	if (argc==1) {
+		std::cout << options.help() << std::endl;
+		return 0;
+	}
+	auto result = options.parse(argc, argv);
 
-	src.push_back(Point2f(1172, 100));
-	src.push_back(Point2f( 202, 266));
-	src.push_back(Point2f(  56, 664));
-	src.push_back(Point2f(1145, 619));
+	if (result["help"].as<bool>()) {
+		std::cout << options.help() << std::endl;
+		return 0;
+	}
 
-	dst.push_back(Point2f(3443, 6987));
-	dst.push_back(Point2f(3575, 7757));
-	dst.push_back(Point2f(3871, 7746));
-	dst.push_back(Point2f(3929, 7514));
+	std::vector<Point2d> src, dst;
+
+	//Reads source file
+	{
+		std::fstream src_file(result["s"].as<std::string>(), std::fstream::in);
+		std::string line;
+
+		while (std::getline(src_file, line)) {
+			double x, y;
+			std::stringstream ss(line);
+			ss >> x >> y;
+			src.push_back(Point2d(x, y));
+		}
+	}
 	
+	//Reads destination file
+	{
+		std::fstream dst_file(result["t"].as<std::string>(), std::fstream::in);
+		std::string line;
+
+		while (std::getline(dst_file, line)) {
+			double x, y;
+			std::stringstream ss(line);
+			ss >> x >> y;
+			dst.push_back(Point2d(x, y));
+		}
+	}
+
 	Mat m = findHomography(src, dst);
 
 	std::vector<Point2f> pol;
-	std::fstream fs(argv[1], std::fstream::in);
+	std::fstream fs(result["p"].as<std::string>(), std::fstream::in);
 	float x, y;
 	while ((fs >> x >> y)) {
 		pol.push_back(Point2f(x, y));
