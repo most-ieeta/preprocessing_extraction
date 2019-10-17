@@ -14,10 +14,20 @@ const char* WHNDL = "Video";
 
 int main(int argc, char* argv[])
 {
-    if (argc != 2 && argc != 3) {
+    if (argc != 2 && argc != 3 && argc != 4) {
         std::cout << "Error! Usage: ./frame_extractor <vid> or ./frame_extractor <vid> <n_frames>\n";
         exit(1);
     }
+
+		if (argc == 4) { //./frame_extractor <vid> <frame_number> f
+			VideoCapture vid(argv[1]);
+			double frame = std::stod(argv[2]);
+			vid.set(CAP_PROP_POS_FRAMES, frame);
+			Mat cur_frame;
+			vid >> cur_frame;
+			save(cur_frame);
+			return 0;
+		}
     VideoCapture vid(argv[1]);
     double max_frames = vid.get(CAP_PROP_FRAME_COUNT);
     std::cout << "Succesfully loaded " << argv[1] << " with " << max_frames

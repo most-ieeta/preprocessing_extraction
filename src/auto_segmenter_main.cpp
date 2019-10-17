@@ -244,9 +244,10 @@ int main(int argc, char** argv) {
 			pol.save(fs, Polygon::FileType::FILE_WKT);
 		}
 
+		/** Checks contour. Uncomment to wait for q press showing windows.
 		unsigned char c;
 		while ((c = waitKey(0)) != 'q') {
-		}
+		} */
 	} else if (result["video"].as<bool>()) {
 		Mat cur_frame;
 		VideoCapture vid(result["media"].as<std::string>());

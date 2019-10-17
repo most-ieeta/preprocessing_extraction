@@ -22,7 +22,8 @@ int main(int argc, char *argv[]) {
 		("h,help", "Shows full help")
 		("i", "Mandatory. Image to plot the WKT.", cxxopts::value<std::string>())
 		("p", "Mandatory. Text file WKT polygon to be plotted", cxxopts::value<std::string>())
-		("o", "Mandatory. Output image.", cxxopts::value<std::string>());
+		("o", "Mandatory. Output image.", cxxopts::value<std::string>())
+		("m", "Draw Markers.");
 	
 	if (argc==1) {
 		std::cout << options.help() << std::endl;
@@ -52,7 +53,12 @@ int main(int argc, char *argv[]) {
 	for (SimplePoint pt: p.points)
 		pol[0].emplace_back(pt.x, pt.y);
 
-	drawContours(image, pol, 0, Scalar(255, 0, 0), 4);
+	drawContours(image, pol, 0, Scalar(0, 165, 255), -1);
+	if (result.count("m")) {
+		for (Point p: pol[0]) {
+			drawMarker(image, p, Scalar(255, 0, 0), MARKER_SQUARE, 20);
+		}
+	}
 
 	imwrite(result["o"].as<std::string>(), image);
 	return 0;
