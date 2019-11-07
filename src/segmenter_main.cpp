@@ -15,7 +15,7 @@ Mat image, mask, segmented, blurred;
 vector<Point> obj;
 vector<Point> background;
 int cur_obj = 0;
-const char *WHNDL = "Segmenter (press q to quit)";
+const char *WHNDL = "Segmenter (press s to save, q to quit)";
 string filename;
 const int blur_sz = 5;
 
@@ -56,50 +56,39 @@ void generateContour() {
   mask.convertTo(binary, CV_32FC1);
   threshold(binary, binary, 200, 255, THRESH_BINARY);
   binary.convertTo(binary, CV_8UC1);
-   imshow("Binary", binary);
+	//imshow("Binary", binary);
   std::vector<std::vector<Point>> vertexes;
-  // CHAIN_APPROX_NONE, CHAIN_APPROX_SIMPLE, CHAIN_APPROX_TC89_L1,
-  // CHAIN_APPROX_TC89_KCOS
-
-  /*findContours(binary, vertexes, RETR_EXTERNAL, CHAIN_APPROX_NONE);
-  std::cout << "NONE (" << vertexes[0].size() << "): \n";
-  for (Point p: vertexes[0]) {
-          std::cout << p.x << "," << p.y << "  ";
-  }
-
-  findContours(binary, vertexes, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
-  std::cout << "\n\nSIMPLE (" << vertexes[0].size() << "): \n";
-  for (Point p: vertexes[0]) {
-          std::cout << p.x << "," << p.y << "  ";
-  }
-
-  findContours(binary, vertexes, RETR_EXTERNAL, CHAIN_APPROX_TC89_L1);
-  std::cout << "\n\nL1 (" << vertexes[0].size() << "): \n";
-  for (Point p: vertexes[0]) {
-          std::cout << p.x << "," << p.y << "  ";
-  }*/
 
   findContours(binary, vertexes, RETR_EXTERNAL, CHAIN_APPROX_NONE);
-  std::cout << "\n\nKC0S (" << vertexes[0].size() << "): \n";
 
-  std::fstream fs(filename + ".pof",
+  std::fstream fs_pof(filename + ".pof",
                   std::fstream::in | std::fstream::out | std::fstream::trunc);
-  std::cout << "Writing to " << (filename + ".pof") << std::endl;
-  if (!fs.is_open()) {
-    std::cout << "Error not open\n";
+  std::fstream fs_wkt(filename + ".wkt",
+                  std::fstream::in | std::fstream::out | std::fstream::trunc);
+
+  if (!fs_pof.is_open() || !fs_wkt.is_open()) {
+    std::cout << "Error, could not open file\n";
     exit(3);
   }
+
+	bool first=true;
+	fs_wkt << "POLYGON ((";
+
   for (Point p : vertexes[0]) {
-    std::cout << p.x << " " << p.y << "\n ";
-    fs << p.x << " " << p.y << "\n";
+		fs_pof << p.x << " " << p.y << "\n";
+		fs_wkt << (!first?", ":"") << p.x << " " << p.y;
+		first = false;
   }
+
+	fs_wkt << ", " << vertexes[0][0].x << " " << vertexes[0][0].y;
+	fs_wkt << "))\n";
 }
 
 static void onMouse(int event, int x, int y, int, void *) {
   if (event != EVENT_LBUTTONDOWN)
     return;
   if (x < 0 || y < 0 || x > segmented.cols || y > segmented.rows) {
-    std::cout << "Detected click outside image. Ignoring.\n";
+		//Click outside of image. Ignoring
     return;
   }
   std::cout << "Clicked. (x, y, cur_obj) = (" << x << ", " << y << ", "
@@ -113,9 +102,7 @@ static void onMouse(int event, int x, int y, int, void *) {
 
   drawMask();
 
-   blur(image, blurred, {blur_sz, blur_sz});
-  // image.copyTo(blur);
-  //blurred = image.clone();
+	blur(image, blurred, {blur_sz, blur_sz});
 
   watershed(blurred, mask);
   genOverlay();
@@ -151,12 +138,12 @@ int main(int argc, char **argv) {
   unsigned char c;
 
   setMouseCallback(WHNDL, onMouse, 0);
-  createTrackbar("Objeto (0 = fundo, 1 = interesse): ", WHNDL, &cur_obj, 1);
+  createTrackbar("Object (0 = background, 1 = object of interest): ", WHNDL, &cur_obj, 1);
 
   std::cout << "Finished loading" << std::endl;
 
   while ((c = waitKey(0)) != 'q') {
-    if (c == 'b') {
+    if (c == 's') {
       generateContour();
     }
   }

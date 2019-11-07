@@ -96,7 +96,8 @@ Mat genImage(bool drawWindow) {
 	std::vector<Polygon> vvt_pols;
 	vvt_pols.push_back(globals.p1);
 	vvt_pols.push_back(globals.p2);
-	Simplifier::visvalingam_with_time(vvt_pols, globals.red_per, globals.t_value);
+	//Simplifier::visvalingam_with_time(vvt_pols, globals.red_per, globals.t_value);
+	Simplifier::douglas_with_time(vvt_pols, globals.red_per, globals.t_value);
 	fs = std::fstream("p1_vvt.pof", std::fstream::out);
 	vvt_pols[0].save(fs, Polygon::FileType::FILE_POF);
 	fs = std::fstream("p2_vvt.pof", std::fstream::out);

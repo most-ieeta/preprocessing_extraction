@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
 	for (SimplePoint pt: p.points)
 		pol[0].emplace_back(pt.x, pt.y);
 
-	drawContours(image, pol, 0, Scalar(0, 165, 255), -1);
+	drawContours(image, pol, 0, Scalar(0, 165, 255), 5);
 	if (result.count("m")) {
 		for (Point p: pol[0]) {
 			drawMarker(image, p, Scalar(255, 0, 0), MARKER_SQUARE, 20);
