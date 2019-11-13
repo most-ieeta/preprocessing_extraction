@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project( MOST )
-find_package( OpenCV REQUIRED )
+find_package( OpenCV 4.0 REQUIRED )
 
 find_library(GEOS_C geos_c)
 find_path(GEOS_INC geos_c.h)
@@ -9,7 +9,9 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-include_directories( ${OpenCV_INCLUDE_DIRS} "./inc" "./preprocessing_geometry/inc")
+message(${OpenCV_INCLUDE_DIRS})
+
+include_directories( ${OpenCV_INCLUDE_DIRS} "./inc" "./preprocessing_geometry/inc" "/usr/include" "/usr/local/include")
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
