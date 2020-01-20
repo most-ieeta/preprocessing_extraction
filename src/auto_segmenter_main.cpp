@@ -323,10 +323,9 @@ int main(int argc, char** argv) {
 				}
 			}
 
-			std::cout << vid.get(CAP_PROP_POS_FRAMES) * 100 / max_frames;
-				//<< "\% - "
-				//<< vid.get(CAP_PROP_POS_FRAMES) << " of " << max_frames
-				//<< std::endl;
+			std::cout << vid.get(CAP_PROP_POS_FRAMES) * 100 / max_frames
+				<< "\% "
+				<< std::endl;
 		}
 	}
 	return 0;
