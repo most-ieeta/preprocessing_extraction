@@ -268,8 +268,8 @@ int main(int argc, char** argv) {
 			fs = std::fstream(result["poly"].as<std::string>(), std::fstream::out);
 		}
 
-		while (vid.get(CAP_PROP_POS_FRAMES) < max_frames) {
-			vid >> cur_frame;
+		while (vid.read(cur_frame)) {
+			//vid >> cur_frame;
 
 			Mat mask; // Mask to hold the values
 			mask = drawMask(cur_frame, result["filter"].as<std::string>());
@@ -323,9 +323,10 @@ int main(int argc, char** argv) {
 				}
 			}
 
-			std::cout << vid.get(CAP_PROP_POS_FRAMES) * 100 / max_frames << "\% - "
-				<< vid.get(CAP_PROP_POS_FRAMES) << " of " << max_frames
-				<< std::endl;
+			std::cout << vid.get(CAP_PROP_POS_FRAMES) * 100 / max_frames;
+				//<< "\% - "
+				//<< vid.get(CAP_PROP_POS_FRAMES) << " of " << max_frames
+				//<< std::endl;
 		}
 	}
 	return 0;

@@ -5,6 +5,12 @@ find_package( OpenCV 4.0 REQUIRED )
 find_library(GEOS_C geos_c)
 find_path(GEOS_INC geos_c.h)
 
+if(CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
 endif()
@@ -14,7 +20,6 @@ message(${OpenCV_INCLUDE_DIRS})
 include_directories( ${OpenCV_INCLUDE_DIRS} "./inc" "./preprocessing_geometry/inc" "/usr/include" "/usr/local/include")
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
