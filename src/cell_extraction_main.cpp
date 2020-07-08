@@ -64,14 +64,22 @@ int main(int argc, char* argv[]) {
 				fs << "POLYGON((";
 
 				bool first = true;
+				Point p1;
 				for (Point p: vertexes[0]) {
 					if (!first) {
 						fs << ",";
 					}
-					fs << p.x << " " << p.y;
-					first = false;
+					else
+					{
+						p1 = p;
+						first = false;
+					}
+					fs << p.x << " " << p.y;					
 				}
-				fs << "))\n";
+				if (!first) {
+					fs << ",";
+				}
+				fs << p1.x << " " << p1.y << "))\n";
 				fs.close();
 
 				done.push_back(pixel);
